@@ -162,7 +162,7 @@ avatar: /default_avatar.png
 
 # Code highlight theme
 # available: normal | night | night eighties | night blue | night bright
-highlight_theme: normal
+highlight_theme: night
 
 # Fancybox for image gallery
 fancybox: true
