@@ -5,7 +5,7 @@
 
 # Site
 title: DBA笔记
-subtitle: 不积跬步无以至千里，不积小流无以成江海
+subtitle:
 description: 学而不思则罔，思而不学则殆
 author: forzpan
 # Support language: de, en, fr-FR, id, ja, ko, pt-BR, pt, ru, zh-Hans, zh-hk, zh-tw
@@ -233,7 +233,7 @@ social_icons:
 
 # Sidebar Avatar
 # in directory: /assets/images/avatar.gif
-#avatar:
+avatar: /images/avatar.png
 
 
 # Table Of Contents in the Sidebar
