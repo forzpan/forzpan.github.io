@@ -6,7 +6,7 @@ categories:
 tags:
 - PostgreSQL
 - 体系结构
-description: 文章模板，复制这个文件，开始编辑文章
+description: PostgreSQL体系结构的几张图
 ---
 
 # 模块体系图
