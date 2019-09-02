@@ -1,10 +1,11 @@
 ---
-layout: post
 title: "MathJax with Jekyll"
-date: 2014-02-16
-categories: opinion
-tags: [resources, jekyll]
-image: http://gastonsanchez.com/images/blog/mathjax_logo.png
+date: 2019-09-02  11:00:00
+categories:
+- demo
+tags:
+- mathjax
+description: markdown内数学公式使用
 ---
 
 One of the rewards of switching my website to [Jekyll](http://jekyllrb.com/) is the
