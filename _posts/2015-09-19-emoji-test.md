@@ -1,5 +1,8 @@
 ---
 title: Emoji Test
+date: 2013-12-24 23:33:27
+categories:
+- demo
 tags:
 ---
 
