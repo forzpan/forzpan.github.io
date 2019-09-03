@@ -2,7 +2,7 @@
 title: 数据库内核月报PostgreSQL篇
 date: 2019-09-02 17:30:00
 categories:
-- PostgreSQL原理
+- PostgreSQL#Kernel
 tags:
 - PostgreSQL
 description: 数据库内核月报PostgreSQL相关链接整理,持续更新...
@@ -111,3 +111,6 @@ description: 数据库内核月报PostgreSQL相关链接整理,持续更新...
 + [关于Paxos 幽灵复现问题](http://mysql.taobao.org/monthly/2018/11/03/)
 + [数据库的事务与复制](http://mysql.taobao.org/monthly/2018/12/01/)
 + [Snapshot Isolation 综述](http://mysql.taobao.org/monthly/2019/02/03/)
+
+
+

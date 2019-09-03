@@ -5,7 +5,6 @@ categories:
 - CLang
 tags:
 - C语言
-- 学习资料
 description: 记录一下 const char*, char const* 和 char*const 的区别
 ---
 

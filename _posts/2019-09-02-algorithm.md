@@ -2,9 +2,11 @@
 title: 算法相关
 date: 2019-09-02 16:00:00
 categories:
-- 算法
+- Algorithm
 tags:
-- 算法博客
+- algorithm
+- btree
+- geohash
 description: 算法相关的学习资料
 ---
 

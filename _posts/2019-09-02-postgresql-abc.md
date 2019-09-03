@@ -2,10 +2,10 @@
 title: PostgreSQL简单使用教程
 date: 2019-09-02 17:00:00
 categories:
-- PostgreSQL基础
+- PostgreSQL#Base
 tags:
 - PostgreSQL
-- 教程
+- 入门教程
 description: PostgreSQL简单使用教程的一些链接
 ---
 
