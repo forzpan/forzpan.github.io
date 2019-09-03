@@ -2,7 +2,7 @@
 title: PostgreSQL体系结构
 date: 2019-09-02 14:00:00
 categories:
-- PostgreSQL#Kernel
+- PostgreSQL-Kernel
 tags:
 - PostgreSQL
 - 体系结构

@@ -2,7 +2,7 @@
 title: 数据库内核月报PostgreSQL篇
 date: 2019-09-02 17:30:00
 categories:
-- PostgreSQL#Kernel
+- PostgreSQL-Kernel
 tags:
 - PostgreSQL
 description: 数据库内核月报PostgreSQL相关链接整理,持续更新...

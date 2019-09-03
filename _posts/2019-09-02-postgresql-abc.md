@@ -2,7 +2,7 @@
 title: PostgreSQL简单使用教程
 date: 2019-09-02 17:00:00
 categories:
-- PostgreSQL#Base
+- PostgreSQL-Base
 tags:
 - PostgreSQL
 - 入门教程
