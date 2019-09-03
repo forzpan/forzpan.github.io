@@ -71,7 +71,7 @@ func fn() (err error) {
 }
 ```
 
-* `slice`，`string`等是本质是结构体，`map`,`channel`本质是结构体指针。go中只有值传递。
+* `slice`，`string`等是本质是结构体，`map`，`channel`本质是结构体指针。go中只有值传递。
 
 [说说不知道的Golang中参数传递](https://gocn.vip/article/1529)
 [There is no pass-by-reference in Go](https://dave.cheney.net/2017/04/29/there-is-no-pass-by-reference-in-go)
