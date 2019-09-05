@@ -4,7 +4,7 @@ date: 2019-09-02 16:00:00
 categories:
 - Algorithm
 tags:
-- algorithm
+- 算法
 - btree
 - geohash
 description: 算法相关的学习资料
