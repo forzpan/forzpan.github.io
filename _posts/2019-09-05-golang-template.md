@@ -188,7 +188,7 @@ type ToDo struct {
 func main() {
     todo := ToDo{
         User: "xiaogang",
-        List: []entry{{"shuxue", true}, {"yuwen", false}, {"dili", true}},
+        List: []entry{ {"shuxue", true}, {"yuwen", false}, {"dili", true} },
     }
  
     t := template.New("xx.tmpl")
