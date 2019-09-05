@@ -16,7 +16,7 @@ GO Template 通过 `{{}}` 来包含在渲染时被替换的字段
 
 `{{.FieldName}}` 访问struct的字段（访问结构体内部的非导出字段，Execute跑到那个位置时会报错，比如`{{.fieldName}}`。不存在的字段当然也报错）
 
-{% raw %}
+{% endraw %}
 
 # if语句
 
@@ -27,7 +27,7 @@ GO Template 通过 `{{}}` 来包含在渲染时被替换的字段
 {{ else }}
     Value of FieldName is null
 {{end}}
-{% raw %}
+{% endraw %}
 ```
 
 # range语句
