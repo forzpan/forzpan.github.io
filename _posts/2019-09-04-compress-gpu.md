@@ -2,7 +2,7 @@
 title: GPU无损压缩算法
 date: 2019-09-04 03:00:00
 categories:
-- Compress
+- Algorithm
 tags:
 - 压缩
 - GPU
