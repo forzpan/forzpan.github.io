@@ -2,7 +2,7 @@
 title: PostgreSQL 之 配置文件
 date: 2019-09-06 02:00:00
 categories:
-- PostgreSQL-Kernel
+- PostgreSQL-Administrate
 tags:
 - PostgreSQL
 description: PostgreSQL中几个配置文件
