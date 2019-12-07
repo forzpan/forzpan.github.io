@@ -26,7 +26,7 @@ PostgreSQL中的全文搜索基于匹配操作符`@@`来完成。
 SELECT to_tsvector('fat cats ate fat rats') @@ to_tsquery('fat & rat');
 ```
 
-支持4种类型：
+匹配支持4种方式：
 
 ```sql
 tsvector @@ tsquery
@@ -42,13 +42,26 @@ to_tsquery('fat & rat');            -- AND
 to_tsquery('fat | rat');            -- OR
 to_tsquery('fat & ! rat');          -- NOT
 to_tsquery('fatal <-> error');      -- FOLLOWED BY  相当于 <1> 就是要求文档内fatal后面一个词是error
-to_tsquery('fatal <2> error');      -- FOLLOWED BY  相当于 <1> 要求fatal后面第二个词是error
+to_tsquery('fatal <2> error');      -- FOLLOWED BY  要求fatal后面第2个词是error
 to_tsquery('fatal <0> error');      -- FOLLOWED BY  十分特殊的用法，要求两个词在同一位置
 ```
 
 优先级从高到低是：`!`、`<->`、`&`、`|` 。
 
-表中查询：
+to_tsvector的几种用法：
+
+```sql
+   Schema   |    Name     | Result data type | Argument data types |  Type 
+------------+-------------+------------------+---------------------+--------
+ pg_catalog | to_tsvector | tsvector         | json                | normal
+ pg_catalog | to_tsvector | tsvector         | jsonb               | normal
+ pg_catalog | to_tsvector | tsvector         | regconfig, json     | normal
+ pg_catalog | to_tsvector | tsvector         | regconfig, jsonb    | normal
+ pg_catalog | to_tsvector | tsvector         | regconfig, text     | normal
+ pg_catalog | to_tsvector | tsvector         | text                | normal
+```
+
+一个查询样例：
 
 ```sql
 SELECT title
@@ -59,10 +72,12 @@ WHERE to_tsvector('english', body) @@ to_tsquery('english', 'friend');
 事实上这种方式非常低效，可以配合GIN索引来加速。
 
 ```sql
-CREATE INDEX pgweb_idx ON pgweb USING GIN(to_tsvector('english', body)); -- 这里必须明确使用的配置，不能省掉第一个参数。
+CREATE INDEX pgweb_idx ON pgweb USING GIN(to_tsvector('english', body)); -- GIN索引中必须明确使用的配置，不能省掉第一个参数。
 ```
 
-可以建立更复杂的表达式索引，在其中配置名被另一个列指定，例如：
+`WHERE to_tsvector('english', body) @@ 'a & b'`可以使用上面的索引，但`WHERE to_tsvector(body) @@ 'a & b'`不能。
+
+可以建立更复杂的表达式索引，其中配置名被另一个列指定，例如：
 
 ```sql
 CREATE INDEX pgweb_idx ON pgweb USING GIN(to_tsvector(config_name, body));
@@ -85,7 +100,7 @@ ORDER BY last_mod_date DESC
 LIMIT 10;
 ```
 
-在使用一个单独的列来存储`tsvector`表示时，有必要创建一个触发器在title或body改变时保证tsvector列为当前值。这边需要一个触发器去实现。
+在使用一个单独的列来存储`tsvector`表示时，有必要创建一个触发器在title或body改变时保证`tsvector`列为当前值。这边需要一个触发器去实现。
 
 ---
 
@@ -112,7 +127,7 @@ SELECT to_tsvector('english', 'a fat  cat sat on a mat - it ate a fat rats');
 
 `to_tsquery`从`querytext`创建一个`tsquery`值，该`querytext`由被`tsquery`操作符`&（AND）`、`|（OR）`、`!（NOT）`和`<->（FOLLOWED BY）`分隔的单个记号组成，
 
-可以使用圆括号分组，使用指定的或者默认的配置把每一个记号正规化成一个词位，并且丢弃掉任何根据配置是停用词的记号。
+可以使用圆括号分组，使用指定的或者默认的配置把每一个记号`正规化`成一个词位，并且丢弃掉任何根据配置是停用词的记号。
 
 ```sql
 --停词省略，前缀和权重匹配
@@ -264,11 +279,31 @@ version of our software.
 
 排名处理尝试度量文档和特定查询的接近程度,比如考虑查询词在文档中出现的频率，密度，以及所在文档部分的重要程度，甚至文档的创建，更新时间，可以看出需要一个量化模型，一般是根据业务定制的。
 
-通常权重被用来标记来自文档特别区域的词，比如正文和标题。权重标签是应用到位置而不是词位。strip函数会剥离tsvector中的位置和权重信息，只留下词位向量。
+通常权重被用来标记来自文档特别区域的词，比如正文和标题。权重标签是应用到位置而不是词位。`strip`函数会剥离tsvector中的位置和权重信息，只留下词位向量。
 
-setweight函数可用来对tsvector中的项标注一个给定的权重，可选权重是：A、B、C、D（1.0, 0.4, 0.2, 0.1）四个字母之一。这种信息可以被用来排名搜索结果。
+`setweight`函数可用来对`tsvector`中的项标注一个给定的权重，可选权重是：`A、B、C、D`四个字母之一。
 
-目前有两种内建的排名函数，可以作为基础或者样例开发适合业务的排名函数：
+权重可以影响搜索结果的排名。权重数组指定每一类词应该得到多重的权重，按照如下的顺序：
+
+`{D-权重, C-权重, B-权重, A-权重}`
+
+如果没有提供权重，那么将使用这些默认值：
+
+`{0.1, 0.2, 0.4, 1.0}`
+
+文档越长，匹配机会越大，相关度肯定不能因为长就更相关。整数正规化选项处理这个问题：
+
+* 0（默认值）忽略文档长度
+* 1 用 1 + 文档长度的对数除排名
+* 2 用文档长度除排名
+* 4 用长度之间的平均调和距离除排名（只被ts_rank_cd实现）
+* 8 用文档中唯一词的数量除排名
+* 16 用 1 + 文档中唯一词数量的对数除排名
+* 32 用排名 + 1 除排名
+
+可以看出来是个可以进行位运算同时指定多个比如`2|4`。
+
+目前有两种内建的排名函数，可以作为基础或者样例开发适合业务的排名函数，第一种只考虑匹配词频，第二种还要考虑匹配词位相互之间的接近度（覆盖密度）：
 
 ```sql
 --基于向量的匹配词位的频率来排名
@@ -305,13 +340,11 @@ ts_stat(sqlquery text, [ weights text, ] OUT word text, OUT ndoc integer, OUT ne
 
 全文搜索并非一定需要索引，但GIN（通用倒排索引）和GiST（通用搜索树）索引可以被用来加速全文查询。
 
-GIN索引只支持tsvector类型的列。作为倒排索引，每个词位都有一个索引项（压缩过的匹配位置的列表），多词搜索是找到第一个匹配，然后使用该索引移除缺少额外词的行。
+GIN 索引是更好的文本搜索索引类型，只支持tsvector类型的列。作为倒排索引，每个词位都有一个索引项（其中有压缩过的匹配位置的列表），多词搜索是找到第一个匹配，然后使用该索引移除缺少额外词的行。GIN索引只存储tsvector值的词（词位），并不存储权重标签。。因此，在使用涉及权重的查询时需要一次在表行上的重新检查。
 
-GIN索引只存储词位，并不存储权重标签。涉及权重查询需要回表检查。
+GiST索引是有损的，可能产生假匹配，PostgreSQL在需要时会自动做回表检查，消除假匹配。GiST索引之所以是有损的，是因为每一个文档在索引中被表示为一个定长的签名。该签名通过哈希每一个词到一个n位串中的一个单一位来产生通过将所有这些位OR在一起产生一个n位的文档签名。当两个词哈希到同一个位位置时就会产生假匹配。如果查询中所有词都有匹配（真或假），则必须检索表行查看匹配是否正确（类似布隆过滤器）。通过词典减少唯一词的数量可以使映射位串冲突减小，降低假匹配概率。
 
-GiST索引是有损的，可能产生假匹配，原理类似布隆过滤器，PostgreSQL在需要时会自动做回表检查，消除假匹配，通过词典减少唯一词的数量可以使映射位串冲突减小，降低假匹配概率。
-
-GIN索引的构建时间常常可以通过增加maintenance_work_mem来改进，而GiST索引的构建时间则与该参数无关。
+GIN索引的构建时间常常可以通过增加`maintenance_work_mem`来改进，而GiST索引的构建时间则与该参数无关。
 
 # 限制
 
