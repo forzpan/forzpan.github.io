@@ -22,7 +22,7 @@ hostssl    database  user  IP-address  IP-mask  auth-method  [auth-options]
 hostnossl  database  user  IP-address  IP-mask  auth-method  [auth-options]
 ```
 
-空白行和注释行将被忽略。记录不能跨行。空格和\t可以作为分隔符。使用双引号可以包含空白，当all replication这些词被双引号包围，就只表示字面名字意思的对象。
+空白行和注释行将被忽略。记录不能跨行。空格和`\t`可以作为分隔符。使用双引号可以包含空白，比如`"all replication"`，就只表示字面名字意思的对象。
 
 从前往后检查，一旦有符合的行，认证就使用这行，成功或者失败，不会继续往下检查。
 

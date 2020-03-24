@@ -8,18 +8,93 @@ tags:
 description: 介绍PostgreSQL中运维常用的一些SQL
 ---
 
+# 系统信息函数
+
 ```sql
-SELECT current_database();
-
-SELECT current_user;
-
-SELECT inet_server_addr(), inet_server_port();
-
+-- 查看版本信息
 SELECT version();
 
-SELECT current_time;
+-- 查看当前数据库名
+SELECT current_database();
+SELECT current_catalog;
 
+-- 查看当前模式名
+SELECT current_schema;
+
+-- 查看搜索路径中的模式名，可以选择是否包含隐式模式
+SELECT current_schemas(true);
+SELECT current_schemas(false);
+
+-- 搜索路径可以在运行时修改。
+SET search_path TO schema [, schema, ...]
+
+-- 查看会话用户
+SELECT session_user;
+
+-- 查看当前用户
+SELECT user;
+SELECT current_user;
+SELECT current_role;
+
+-- session_user通常是发起当前数据库连接的用户，不过超级用户可以用SET SESSION AUTHORIZATION修改这个设置。
+-- current_user是用于权限检查的用户标识。通常，它总是等于会话用户，但是可以被SET ROLE改变。它也会在函数执行的过程中随着属性SECURITY DEFINER的改变而改变。
+
+-- 查看本地连接的地址和端口
+SELECT inet_client_addr(), inet_client_port();
+
+-- 查看远程连接的地址和端口
+SELECT inet_server_addr(), inet_server_port();
+
+-- 查看与当前会话关联的服务器进程的进程ID
+SELECT pg_backend_pid();
+
+-- 查看阻塞指定服务器进程ID获得锁的进程ID
+SELECT pg_blocking_pids(int);
+
+-- 一般使用是： pg_blocking_pids(pg_backend_pid())
+-- 注意当一个预备事务持有一个冲突锁时，这个函数的结果中它将被表示为一个为0的进程ID。对这个函数的频繁调用可能对数据库性能有一些影响，因为它需要短时间地独占访问锁管理器的共享状态。
+
+-- 查看当前时间相关
+SELECT current_timestamp, current_date, current_time;
+
+-- 服务器启动时间
+SELECT pg_postmaster_start_time();
+
+-- 服务器工作时长（秒）
 SELECT date_trunc('second', current_timestamp - pg_postmaster_start_time()) as uptime;
+
+-- 查看配置载入时间
+SELECT pg_conf_load_time();
+
+-- 当前日志收集器在使用的主日志文件名或者所要求格式的日志的文件名
+SELECT pg_current_logfile([text]);
+
+-- 会话的临时模式的 OID，如果没有则为 0
+SELECT pg_my_temp_schema();
+
+-- 模式是另一个会话的临时模式吗？
+SELECT pg_is_other_temp_schema(oid);
+
+-- 这个会话中JIT编译是否可用？如果jit被设置为off，则返回false。
+SELECT pg_jit_available();
+
+-- 会话当前正在监听的频道名称
+SELECT pg_listening_channels();
+
+-- 异步通知队列当前被占用的分数（0-1）
+SELECT pg_notification_queue_usage();
+
+-- 阻止指定服务器进程ID获取安全快照的进程ID
+SELECT pg_safe_snapshot_blocking_pids(int);
+
+-- PostgreSQL触发器的当前嵌套层次（如果没有调用则为 0，直接或间接，从一个触发器内部开始）
+SELECT pg_trigger_depth();
+```
+
+更多需访问 [PostgreSQL 系统信息函数](http://postgres.cn/docs/11/functions-info.html)
+
+```sql
+
 
 SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog'); 
 
