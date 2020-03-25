@@ -45,12 +45,6 @@ SELECT inet_client_addr(), inet_client_port();
 -- 查看远程连接的地址和端口
 SELECT inet_server_addr(), inet_server_port();
 
--- 查看与当前会话关联的服务器进程的进程ID
-SELECT pg_backend_pid();
-
--- 查看阻塞指定服务器进程ID获得锁的进程ID
-SELECT pg_blocking_pids(int);
-
 -- 一般使用是： pg_blocking_pids(pg_backend_pid())
 -- 注意当一个预备事务持有一个冲突锁时，这个函数的结果中它将被表示为一个为0的进程ID。
 -- 对这个函数的频繁调用可能对数据库性能有一些影响，因为它需要短时间地独占访问锁管理器的共享状态。
@@ -92,26 +86,68 @@ SELECT pg_safe_snapshot_blocking_pids(int);
 SELECT pg_trigger_depth();
 ```
 
-更多需访问 [PostgreSQL 系统信息函数](http://postgres.cn/docs/11/functions-info.html)
+# 数据库对象定位与系统文件操作
 
 ```sql
--- 当前用户使用的表数量
-SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog'); 
+-- 指定关系的文件结点号
+SELECT pg_relation_filenode(relation regclass);
 
+-- 指定关系的文件路径名
+SELECT pg_relation_filepath(relation regclass);
+
+-- 查找与给定的表空间和文件节点相关的关系
+SELECT pg_filenode_relation(tablespace oid, filenode oid);
+
+-- 返回一个文本文件的内容。默认仅限于超级用户使用，但是可以给其他用户授予EXECUTE让他们运行这个函数。
+SELECT pg_read_file(filename text [, offset bigint, length bigint [, missing_ok boolean] ])
+
+-- 返回一个文件的内容。默认仅限于超级用户使用，但是可以给其他用户授予EXECUTE让他们运行这个函数。
+SELECT pg_read_binary_file(filename text [, offset bigint, length bigint [, missing_ok boolean] ])	
+
+-- 返回关于一个文件的信息。默认仅限于超级用户使用，但是可以给其他用户授予EXECUTE让他们运行这个函数。
+SELECT pg_stat_file(filename text[, missing_ok boolean])
+```
+
+# 数据库存储尺寸相关
+
+```sql
+
+-- 把人类可读格式的带有单位的尺寸转换成字节数
+select pg_size_bytes(text);
+-- 将表示成一个 64位整数的字节尺寸转换为带尺寸单位的人类可读格式，基于1024而不是1000
+select pg_size_pretty(bigint);
+
+-- 存储一个特定值（可能压缩过）所需的字节数
+select pg_column_size(any);
+
+-- 指定数据库使用的磁盘空间
+select pg_database_size(oid);
+select pg_database_size(name);
 -- 查看各个数据库的存储尺寸
 SELECT datname,pg_size_pretty(pg_database_size(datname)) size from pg_database;
 
--- 指定表或索引的指定分叉（'main'、'fsm'、'vm'或'init'）使用的磁盘空间
-select pg_relation_size('pgbench_accounts', 'main');
+-- 指定的表空间使用的磁盘空间
+select pg_tablespace_size(oid);
+select pg_tablespace_size(name);
 
+-- 附加到指定表的索引所占的总磁盘空间
+select pg_indexes_size(regclass);
+-- 被指定表使用的磁盘空间，排除索引（但包括TOAST、fsm和vm）
+select pg_table_size(regclass);
+-- 指定表所用的总磁盘空间，包括所有的索引和TOAST数据
+-- 等价于pg_table_size + pg_indexes_size
+select pg_total_relation_size(regclass);
+-- 查看表存储情况
+\dt+ pgbench_accounts
+
+-- 指定表或索引的指定分叉（'main'、'fsm'、'vm'或'init'）使用的磁盘空间
+-- 这是一个比较底层的函数，常规情况下使用上面几个高层函数即可
+select pg_relation_size('pgbench_accounts', 'main');
 -- pg_relation_size(..., 'main')的简写，
 select pg_relation_size('pgbench_accounts');
 
--- 查看各个表+表索引+TOAST的存储尺寸
-select pg_total_relation_size('pgbench_accounts');
-
--- 
-\dt+   pgbench_accounts
+-- 当前用户使用的表数量
+SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog'); 
 
 -- 查看所有用户表main分叉的存储大小，按大小倒排
 SELECT table_schema||'.'||table_name as tbname,pg_relation_size(table_schema || '.' || table_name) as size
@@ -154,6 +190,7 @@ FROM pg_database
 WHERE datname = current_database();
 
 -- 获取表文件存储大小的函数实现
+-- 函数或许有点问题，global目录怎么办，为什么不使用pg_relation_filepath获取路径
 CREATE OR REPLACE FUNCTION pg_relation_size_nolock(tablename regclass)
 RETURNS BIGINT
 LANGUAGE plpgsql
@@ -229,20 +266,68 @@ BEGIN
     RETURN tablesize;
 END;
 $$;
+```
 
+# 数据库配置相关
+
+```sql
+-- 获得设置的当前值,missing_ok为true的话，即使不是合法setting_name，也不报错，返回null。
+SELECT current_setting(setting_name [, missing_ok ]);
+-- 当省略missing_ok，或者missing_ok为false时，效果等同于 show 命令。
+show setting_name
+
+-- 设置一个参数并返回新值，如果is_local设置为true，那么新值将只应用于当前事务。
+SELECT set_config(setting_name, new_value, is_local)
+-- 如果希望新值应用于当前会话，is_local应该使用false。它等效于 SQL 命令 SET。
+set work_mem = '16MB';
+-- 只能用在事务块中,临时调整工作内存
+set local work_mem = '16MB';
+
+-- 查看会话级别参数配置
+SELECT name, setting, reset_val, source FROM pg_settings WHERE source = 'session';
+
+--查询被修改过的配置，就是不是initdb之后的初始配置的结果
+SELECT name, source, setting FROM pg_settings WHERE source != 'default' AND source != 'override' ORDER by 2, 1; 
+
+-- 给服务器进程发一个SIGHUP信号，让其重载配置文件
+SELECT pg_reload_conf();
+```
+
+# 服务器进程相关
+
+```sql
+-- 查看与当前会话关联的服务器进程的进程ID
+SELECT pg_backend_pid();
+
+-- 查看阻塞指定服务器进程ID获得锁的进程ID
+SELECT pg_blocking_pids(int);
+
+-- 给服务器进程发一个SIGINT信号，取消一个后端的当前查询。
+-- 如果调用角色是被取消后端的拥有者角色的成员或者调用角色已经被授予pg_signal_backend。
+-- 只有超级用户才能取消超级用户的后端。
+SELECT pg_cancel_backend(pid int);
+
+-- 给服务器进程发一个SIGTERM信号，中止一个后端。
+-- 如果调用角色是被取消后端的拥有者角色的成员或者调用角色已经被授予pg_signal_backend。
+-- 只有超级用户才能中止超级用户的后端。
+SELECT pg_terminate_backend(pid int);
+
+-- 一个活动后端的进程 ID可以从pg_stat_activity视图的pid列中找到，也可以从系统进程列表发现。
+
+-- 给服务器进程发信号，让其切换服务器的日志文件。
+SELECT pg_rotate_logfile();
+```
+
+# 其他
+
+```sql
 -- 查看插件
 SELECT * FROM pg_extension;
 
 -- 查看表约束
 SELECT * FROM pg_constraint WHERE confrelid = 'orders'::regclass;
 
--- 查看会话级别参数配置
-SELECT name, setting, reset_val, source FROM pg_settings WHERE source = 'session';
-
--- 只能用在事务块中,临时调整工作内存
-set local work_mem = '16MB';
-
---查询被修改过的配置，就是不是initdb之后的初始配置的结果
-SELECT name, source, setting FROM pg_settings WHERE source != 'default' AND source != 'override' ORDER by 2, 1;       
 ```
 
+更多需访问 [PostgreSQL 系统信息函数](http://postgres.cn/docs/11/functions-info.html)
+更多需访问 [PostgreSQL 系统管理函数](http://postgres.cn/docs/11/functions-admin.html)
